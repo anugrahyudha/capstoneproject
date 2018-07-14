@@ -91,7 +91,9 @@ Set data_channel dan weekday_is sebagai suatu variabel tersendiri (tidak dilakuk
 news$day <- NA
 news$data_channel <- NA
 
-news$day <- factor(apply(news[32:38,], 1, function(x) which(x == 1)), labels = colnames(news[32:38,]))
+news$day <- colnames(news)[32:38][max.col(news[,32:38] != 0)] #delete weekday_is, capitalize huruf depannya, ubah jadi factor
+news$data_channel <- factor(colnames(news)[14:19][max.col(news[,14:19] != 0)]) #delete data_channel_is, revisi beberapa katanya, capitalize huruf depannya, ubah jadi factor
+View(news)
 ```
 
 
