@@ -1,0 +1,117 @@
+---
+title: "R Notebook"
+author: "Anugrah Yudha Pranata"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+#0. Meng-install Packages
+
+```{r}
+#install.packages("dplyr")
+#install.packages("ggplot2")
+library(dplyr)
+library(ggplot2)
+```
+
+
+#1. Loading Data
+
+```{r}
+setwd("D:/BODT Camp IYKRA/Capstone Project/")
+news <- read.csv("dataset/OnlineNewsPopularity.csv")
+```
+
+#2. Melihat overview data
+
+```{r}
+str(news)
+summary(news)
+head(news)
+```
+
+Some variables need to be addressed as factors. Some others need to be addressed as text.
+Beberapa variabel memiliki outlier. Salah satu kemungkingan keberadaan outlier tersebut adalah karena salah input.
+
+#3. Ubah tipe data untuk beberapa variabel
+
+```{r}
+news$data_channel_is_lifestyle <- as.factor(news$data_channel_is_lifestyle)
+news$data_channel_is_entertainment <- as.factor(news$data_channel_is_entertainment)
+news$data_channel_is_bus <- as.factor(news$data_channel_is_bus)
+news$data_channel_is_socmed <- as.factor(news$data_channel_is_socmed)
+news$data_channel_is_tech <- as.factor(news$data_channel_is_tech)
+news$data_channel_is_world <- as.factor(news$data_channel_is_world)
+
+news$weekday_is_monday <- as.factor(news$weekday_is_monday)
+news$weekday_is_tuesday <- as.factor(news$weekday_is_tuesday)
+news$weekday_is_wednesday <- as.factor(news$weekday_is_wednesday)
+news$weekday_is_thursday <- as.factor(news$weekday_is_thursday)
+news$weekday_is_friday <- as.factor(news$weekday_is_friday)
+news$weekday_is_saturday <- as.factor(news$weekday_is_saturday)
+news$weekday_is_sunday <- as.factor(news$weekday_is_sunday)
+#Untuk masalah hari, daripada diganti jadi factor, bisa juga dimodifikasi dengan gabungin semua data, terus diganti jadi factor (data berskala nominal, yaitu nama-nama hari)
+news$is_weekend <- as.factor(news$is_weekend)
+```
+
+#4. Mencari outlier
+
+Yang dicurigai ada outlier:
+1. n_unique_tokens
+(karena berdasarkan deskripsi variabel, data ini bertipe ratio, sehingga seharusnya memiliki rentang nilai antara 0 hingga 1)
+2. n_non_stop_words
+(karena berdasarkan deskripsi variabel, data ini bertipe ratio, sehingga seharusnya memiliki rentang nilai antara 0 hingga 1)
+3. n_non_stop_unique_tokens
+(karena berdasarkan deskripsi variabel, data ini bertipe ratio, sehingga seharusnya memiliki rentang nilai antara 0 hingga 1)
+4. num_hrefs     
+5. num_self_hrefs
+6. num_imgs
+7. num_videos
+8. n_tokens_content
+:: Karena memiliki nilai maksimal yang sangat besar
+
+*Sepertinya yang merupakan outlier itu merupakan 1 row --> bisa dihapus atau perlu disesuaikan (misalnya dengan re-input)
+
+```{r}
+View(news)
+```
+
+Masih belum diketahui, kenapa mereka punya nilai -1:
+1. kw_min_min
+2. kw_avg_min
+3. kw_min_avg
+
+
+Set data_channel dan weekday_is sebagai suatu variabel tersendiri (tidak dilakukan sebelumnya karena fungsinya hanya sebagai data kategorikal)
+
+```{r}
+news$day <- NA
+news$data_channel <- NA
+
+news$day <- factor(apply(news[32:38,], 1, function(x) which(x == 1)), labels = colnames(news[32:38,]))
+```
+
+
+
+
+```{r}
+ggplot(news, aes(timedelta)) + geom_histogram(binwidth = 30) #binwidth = 1 berarti dihitung perhari
+```
+
+
+```{r}
+#Grouping berdasarkan data_channel dan weekly_is
+news %>%
+  group_by(data_channel_is_lifestyle) %>% 
+  summarise(total = n())
+```
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
