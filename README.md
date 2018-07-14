@@ -1,1 +1,1 @@
-# mashable_online_news
+# Capstone Project
