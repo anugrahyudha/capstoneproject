@@ -50,9 +50,84 @@ head(newss, 10)
 summary(newss)
 #View(newss)
 
+ggplot(data = newss, aes(x = shares)) + geom_density()
+ggplot(data = newss, aes(x = shares)) + geom_histogram(binwidth = 100)
+#Hasil: target sangat skewed
+
+summary(newss$shares)
+sd(newss$shares)
+#Minimum = 1
+#1st Quartile = 946
+#Median = 1400
+#3rd Quartile = 2800
+#Maximum = 843300
+#Mean = 3395
+#Count = 39644
+#Standar deviasi = 11626.95
+
+
+#Visualisasi
+df <- newss
+df <- df %>% 
+  mutate(day = factor(case_when(weekday_is_monday == 1 ~ 1,
+                         weekday_is_tuesday == 1 ~ 2,
+                         weekday_is_wednesday == 1 ~ 3,
+                         weekday_is_thursday == 1 ~ 4,
+                         weekday_is_friday == 1 ~ 5,
+                         weekday_is_saturday == 1 ~ 6,
+                         weekday_is_sunday == 1 ~ 7)),
+         channel = factor(case_when(data_channel_is_bus == 1 ~ "business",
+                             data_channel_is_entertainment == 1 ~ "entertainment",
+                             data_channel_is_lifestyle == 1 ~ "lifestyle",
+                             data_channel_is_socmed == 1 ~ "socmed",
+                             data_channel_is_tech == 1 ~ "tech",
+                             data_channel_is_world == 1 ~ "world",
+                             TRUE ~ "viral"))
+         )
+summary(df)
+str(df)
+#Kalau outlier di targetnya dihapus, akan terlihat lebih jelas
+ggplot(data = df, aes(x = day, y = shares)) + geom_boxplot() + coord_flip()
+ggplot(data = df, aes(x = channel, y = shares)) + geom_boxplot() + coord_flip()
+
+
+ggplot(data = df, aes(x = n_tokens_title, y = shares)) + geom_jitter()
+ggplot(data = df, aes(x = n_tokens_content, y = shares)) + geom_jitter()
+ggplot(data = df, aes(x = num_hrefs, y = shares)) + geom_jitter()
+ggplot(data = df, aes(x = num_self_hrefs, y = shares)) + geom_jitter()
+ggplot(data = df, aes(x = num_imgs, y = shares)) + geom_jitter()
+ggplot(data = df, aes(x = num_keywords, y = shares)) + geom_jitter() #bisa jadi geom_bar juga
+
+ggplot(data = df, aes(y = self_reference_min_shares, x = shares)) + geom_jitter()
+ggplot(data = df, aes(y = self_reference_max_shares, x = shares)) + geom_jitter()
+ggplot(data = df, aes(y = self_reference_avg_sharess, x = shares)) + geom_jitter()
+#Insight menarik:
+#Artikel yang mendapatkan share paling viral, tidak mempunyai artikel referensi (sebelumnya) yang viral juga (cek kanan bawah)
+#Sementara itu, artikel yang mencantumkan referensi (sebelumnya) yang viral, tidak mendapatkan banyak share (cek kiri atas)
+#Seharusnya, ada yang mendapatkan kanan atas
+#Sepertinya untuk pemodelan, variabel ini bisa digunakan dengan batasan nilai tertentu saja
+
+ggplot(data = df, aes(x = kw_min_min, y = shares)) + geom_jitter()
+ggplot(data = df, aes(x = kw_avg_min, y = shares)) + geom_jitter()
+ggplot(data = df, aes(x = kw_min_avg, y = shares)) + geom_jitter()
+ggplot(data = df, aes(x = kw_min_max, y = shares)) + geom_jitter()
+#Susah untuk ditarik kesimpulan... salah cara?
+
+ggplot(data = df, aes(x = LDA_00, y = shares)) + geom_jitter()
+ggplot(data = df, aes(x = LDA_01, y = shares)) + geom_jitter()
+ggplot(data = df, aes(x = LDA_03, y = shares)) + geom_jitter()
+ggplot(data = df, aes(x = LDA_04, y = shares)) + geom_jitter()
+#Susah untuk ditarik kesimpulan... salah cara?
+
 
 #df
 df <- newss
+
+#Hapus outlier karena nilai untuk variabel Unique Tokens tidak berada dalam rentang seharusnya judgement
+#Menghapus 1 observasi
+df <- df %>%
+  filter(n_unique_tokens <= 1)
+
 df <- df %>%
   mutate(ol = case_when(shares > 38275 ~ 1,
                         TRUE ~ 0
@@ -60,29 +135,54 @@ df <- df %>%
 df$ol <- as.double(df$ol)
 
 df <- df %>%
-  mutate(new_shares = case_when(ol==1 ~ 38275,
-                                TRUE~ as.double(shares)))
-
-df <- df %>%
   filter(ol==0)
+#Hapus outlier sejumlah 308 variabel karena diluar batas rata-rata + 3 standar deviasi #1
 
+summary(df$shares)
+nrow(df)
+sd(df$shares)
+# #1
+#Minimum = 1
+#1st Quartile = 942
+#Median = 1400
+#3rd Quartile = 2700
+#Maximum = 38200
+#Mean = 2755
+#Count = 39335
+#Standar deviasi = 3949.67
 
-df <- df %>%
-  filter(n_unique_tokens <= 1)
+ggplot(data = df, aes(x = shares)) + geom_density()
+#Hasil: target (masih) sangat skewed, tapi sudah lebih normal
+
+#Nilai kedua dari rata-rata + 3 standar deviasi = 14604.01
+
 
 columns <- c("LDA_00","LDA_01","LDA_02","LDA_03","LDA_04","is_weekend","data_channel_is_lifestyle","data_channel_is_entertainment","data_channel_is_bus","data_channel_is_socmed","data_channel_is_tech","data_channel_is_world","avg_negative_polarity","average_token_length","min_negative_polarity","max_negative_polarity","rate_positive_words","rate_negative_words","self_reference_min_shares","self_reference_max_shares","self_reference_avg_sharess","num_hrefs","num_imgs","global_subjectivity","abs_title_sentiment_polarity","num_videos","shares")
 columns_new <- c("LDA_00","LDA_01","LDA_02","LDA_03","LDA_04","is_weekend","data_channel_is_lifestyle","data_channel_is_entertainment","data_channel_is_bus","data_channel_is_socmed","data_channel_is_tech","data_channel_is_world","average_token_length","min_negative_polarity","max_negative_polarity","rate_positive_words","rate_negative_words","self_reference_min_shares","self_reference_max_shares","num_hrefs","num_imgs","global_subjectivity","abs_title_sentiment_polarity","num_videos","shares")
 
-
 df <- df %>%
   select(columns_new)
-write.csv(df, file = "df_newest.csv")
+write.csv(df, file = "df_cleaner2.csv")
 df <- df %>% 
-  mutate(popularity = case_when(shares >= 1400 ~ 1, #sebelumnya pakai >= 1400, kemudian ganti jadi >1400
+  mutate(popularity = case_when(shares >= 1400 ~ 1, #klasifikasi awal
                                 TRUE ~ 0
+  ))
+
+df <- df %>% 
+  mutate(popularity = case_when(shares >= 2755 ~ 2, #sebelumnya pakai >= 1400 ~ 1, TRUE ~ 0; pernah juga pakai > 1400 ~ 1
+                                shares < 942 ~ 0, #kalau ada 3 kelas, nanti sesuaikan jumlah units-nya di model juga ya
+                                TRUE ~ 1
                                 ))
 summary(df)
 df <- df[,-25] #perlu dihitung terus jumlah variabelnya
+
+df <- df %>%
+  filter(popularity!=1)
+df <- df %>%
+  mutate(popularity = case_when(popularity == 2 ~ 1,
+                         TRUE ~ 0))
+summary(df)
+
 
 corrplot(cor(df), method = "number", type = "lower", tl.pos = "ld", number.cex = 0.6)
 corrplot.mixed(cor(df), lower.col = "black", number.cex = 0.6, tl.col = "black", tl.cex = 0.4)
@@ -100,7 +200,6 @@ filter <- newss[,c(8, 10:12, 14:38, 40:45, 49:50, 54:56, 60, 61)]
 set.seed(123)
 
 # Regression
-
 filter.reg <- filter
 
 #Data Partition, bukan cuma untuk NN
@@ -307,12 +406,12 @@ model <- keras_model_sequential()
 model %>%
   layer_dense(units=30, activation = 'relu', input_shape = c(24)) %>%
   layer_dense(units=9, activation = 'relu') %>% 
-  layer_dense(units=2, activation = 'softmax')
+  layer_dense(units=2, activation = 'softmax') #kalau mau pakai 2 kelas popular atau tidak, ganti units jadi 2
 summary(model)
 
 model %>% 
   compile(loss = 'categorical_crossentropy',
-          optimizer = 'adam',
+          optimizer = 'rmsprop',
           metrics = 'accuracy')
 
 history <- model %>% 
@@ -321,8 +420,8 @@ history <- model %>%
       epoch = 150,
       batch_size = 10,
       validation_split = 0.2)
-save(model, file = "goodmodel-1.RData")
-save(history, file = "goodmodel1.RData")
+save(model, file = "goodmodel-3.RData")
+save(history, file = "goodmodel3.RData")
 plot(history)
 
 model %>% 
@@ -402,9 +501,36 @@ model %>%
 #$acc
 #[1] 0.6183003
 
+#Batas populer >=1400, optimizer = rmsprop, loss = categorical_crossentropy ((model = goodmodel-2.RData, history = goodmodel2.RData))
+#UNITS = c(30,9)
+#11661/11661 [==============================] - 0s 15us/step
+#$`loss`
+#[1] 0.6932605
+
+#$acc
+#[1] 0.6288483
+
+#Batas populer >=2755, unpopular < 942, optimizer = rmsprop, loss = categorical_crossentropy ((model = goodmodel-3.RData, history = goodmodel3.RData))
+#UNITS = c(30,9)
+#5746/5746 [==============================] - 0s 14us/step
+#$`loss`
+#[1] 0.7113757
+
+#$acc
+#[1] 0.6816916
+
+#Batas populer >=1400, optimizer = rmsprop, loss = categorical_crossentropy ((model = goodmodel-2.RData, history = goodmodel2.RData))
+#UNITS = c(30,9)
+#11661/11661 [==============================] - 0s 16us/step
+#$`loss`
+#[1] 0.6781046
+
+#$acc
+#[1] 0.6276477
+
 prob <- model %>% 
   predict_proba(test)
-
+str(prob)
 pred <- model %>% 
   predict_classes(test)
 
@@ -464,7 +590,56 @@ table(Predicted = pred, Actual = testtarget)
 #Predicted    0    1
 #        0 2386 1371
 #        1 3080 4824
+#Batas populer >1400, optimizer = rmsprop, loss = categorical_crossentropy
+#UNITS = c(30,9)
+#          Actual
+#Predicted    0    1
+#        0 2194 1056
+#        1 3272 5139
+#Batas populer >=2755, unpopular < 942, optimizer = rmsprop, loss = categorical_crossentropy ((model = goodmodel-3.RData, history = goodmodel3.RData))
+#UNITS = c(30,9)
+#         Actual
+#Predicted    0    1
+#        0 1788  712
+#        1 1117 2129
+#Batas populer >1400, optimizer = rmsprop, loss = categorical_crossentropy
+#UNITS = c(30,9)
+#          Actual
+#Predicted    0    1
+#        0 2287 1163
+#        1 3179 5032
 cbind(prob, pred, testtarget)
+
+# Perhitungan ROC, AUC
+pred.val <- prediction(prob[,2],testtarget)
+auc.perf = performance(pred.val, measure = "auc")
+auc.perf@y.values
+
+#Batas populer >=2755, unpopular < 942, optimizer = rmsprop, loss = categorical_crossentropy ((model = goodmodel-3.RData, history = goodmodel3.RData))
+#UNITS = c(30,9)
+#[[1]]
+#[1] 0.7412682
+
+#Batas populer >1400, optimizer = rmsprop, loss = categorical_crossentropy
+#UNITS = c(30,9)
+#[[1]]
+#[1] 0.6667672
+perf = performance(pred.val,measure="tpr",x.measure = "fpr")
+plot(perf)
+
+rocCurve.df <- roc(response = testtarget,
+                    predictor = prob[,2],
+                    levels = levels(factor(testtarget)))
+auc(rocCurve.df)
+#Batas populer >=2755, unpopular < 942, optimizer = rmsprop, loss = categorical_crossentropy ((model = goodmodel-3.RData, history = goodmodel3.RData))
+#UNITS = c(30,9)
+#Area under the curve: 0.7413
+
+#Batas populer >1400, optimizer = rmsprop, loss = categorical_crossentropy
+#UNITS = c(30,9)
+#Area under the curve: 0.6668
+plot(rocCurve.df,legacy.axes=TRUE)
+title("ROC Curve Mashable Classification w/ 24 Var.",line=+3)
 
 
 #KERAS Regression
@@ -491,7 +666,7 @@ summary(model)
 
 model %>% 
   compile(loss = 'mse',
-          optimizer = 'adam',
+          optimizer = 'rmsprop',
           metrics = c("mae"))
 
 history <- model %>% 
@@ -506,17 +681,27 @@ plot(history)
 model %>% 
   evaluate(test, testtarget)
 
+#Optimizer = 'adam'
 #11661/11661 [==============================] - 0s 17us/step
 #$`loss` = MSE
 #[1] 15629234
 #RMSE = 3953.383
-sqrt(15629234)
+#=sqrt(15629234)
 #$mean_absolute_error
 #[1] 2280.194
 
+#Optimizer = 'rmsprop'
+#11661/11661 [==============================] - 0s 14us/step
+#$`loss`
+#[1] 15540156
+#RMSE = 3942.1
+#=sqrt(15540156)
+#$mean_absolute_error
+#[1] 2231.32
+
 prob <- model %>% 
   predict_proba(test)
-
+str(prob)
 pred <- model %>% 
   predict(test)
 
@@ -527,7 +712,6 @@ plot(pred, testtarget)
 
 #Cross-Validation
 #CLASSIFICATION
-#Cross-Validation
 
 cv.error <- NULL
 k <- 10 #k-folds
@@ -576,3 +760,179 @@ for (i in 1:k){
     evaluate(test, testtarget)
   pbar$step()
 }
+
+
+#Logistic Regression
+dft <- newss
+dft <- dft[,-c(1,2)]
+
+dft <- dft %>% 
+  mutate(popularity = case_when(shares <= 946 ~ 1,
+                                shares >= 3395 ~ 2,
+                                TRUE ~ 0
+  )) %>% 
+  filter(popularity > 0) %>% 
+  mutate(popularity = popularity - 1)
+dft <- dft[,-59]
+summary(dft)
+
+set.seed(100)
+index <- caret::createDataPartition(dft$popularity, p = 0.7, list = FALSE)
+
+train_logit <- dft[index,]
+test_logit <- dft[-index,]
+
+model_logit = glm(formula = popularity ~ ., data = train_logit, family = "binomial")
+model_logit
+
+summary(model_logit)
+# *
+#n_tokens_title
+#n_tokens_content
+#data_channel_is_bus
+#kw_min_max
+#global_rate_positive_words
+
+# **
+#kw_avg_max
+#LDA_01
+
+# ***
+#num_hrefs
+#num_self_hrefs
+#average_token_length
+#num_keywords
+#data_channel_is_entertainment
+#data_channel_is_socmed
+#data_channel_is_tech
+#kw_min_min
+#kw_max_min
+#kw_avg_min
+#kw_min_avg
+#kw_max_avg
+#kw_avg_avg
+#weekday_is_monday
+#weekday_is_tuesday
+#weekday_is_wednesday
+#weekday_is_thursday
+#weekday_is_friday 
+#LDA_00
+#LDA_02
+#LDA_03
+#global_subjectivity
+#title_sentiment_polarity
+#abs_title_subjectivity
+
+#AIC: 14070
+#Number of Fisher Scoring iterations: 5
+
+model_logit$fitted.values
+
+#result of model
+train_logit$prediction <- model_logit$fitted.values > 0.5
+
+#prediction
+fitted.results <- predict(model_logit,newdata=test_logit)
+
+?findLinearCombos
+
+fitted.results
+#nilai prediksi dari implementasi model terhadap variabel-variabel pada data test_logit.
+#Bukan data popularity sebenarnya (label, pada supervised learning)
+fitted.results <- ifelse(fitted.results > 0.5,1,0)
+
+table(fitted.results, test_logit$popularity)
+
+#accuracy
+misClasificError <- mean(fitted.results != test_logit$popularity)
+accr <- 1 - misClasificError
+accr
+#Accuracy = 0.707886
+#Kalau hapus outlier di variabel independen (1 row)= 0.7082562
+
+#AUC
+pr <- prediction(fitted.results, test_logit$popularity)
+pr
+prf <- performance(pr, measure = "tpr", x.measure = "fpr")
+plot(prf)
+
+auc <- performance(pr, measure = "auc")
+auc <- auc@y.values[[1]]
+auc
+#AUC = 0.6837943 // 0.6833857
+
+
+#Logistic Regression #2
+dft <- newss
+dft <- dft %>%
+  filter(n_unique_tokens <= 1)
+
+dft <- dft %>%
+  mutate(ol = case_when(shares > 38275 ~ 1,
+                        TRUE ~ 0
+  ))
+dft$ol <- as.double(dft$ol)
+
+dft <- dft %>%
+  filter(ol==0)
+dft <- dft[,-c(1, 2, 62)] #perlu dihitung terus jumlah variabelnya
+###################
+columns_new <- c("LDA_00","LDA_01","LDA_02","LDA_03","LDA_04","is_weekend","data_channel_is_lifestyle","data_channel_is_entertainment","data_channel_is_bus","data_channel_is_socmed","data_channel_is_tech","data_channel_is_world","average_token_length","min_negative_polarity","max_negative_polarity","rate_positive_words","rate_negative_words","self_reference_min_shares","self_reference_max_shares","num_hrefs","num_imgs","global_subjectivity","abs_title_sentiment_polarity","num_videos","shares")
+
+dft <- dft %>%
+  select(columns_new)
+
+dft <- dft %>% 
+  mutate(popularity = case_when(shares >= 2755 ~ 2, #sebelumnya pakai >= 1400 ~ 1, TRUE ~ 0; pernah juga pakai > 1400 ~ 1
+                                shares < 942 ~ 1, #kalau ada 3 kelas, nanti sesuaikan jumlah units-nya di model juga ya
+                                TRUE ~ 0
+  )) %>%
+  filter(popularity > 0) %>% 
+  mutate(popularity = popularity - 1)
+summary(dft)
+dft <- dft[,-25] #perlu dihitung terus jumlah variabelnya
+
+set.seed(100)
+index <- caret::createDataPartition(dft$popularity, p = 0.7, list = FALSE)
+
+train_logit <- dft[index,]
+test_logit <- dft[-index,]
+
+model_logit = glm(formula = popularity ~ ., data = train_logit, family = "binomial")
+model_logit
+
+summary(model_logit)
+
+model_logit$fitted.values
+
+#result of model
+train_logit$prediction <- model_logit$fitted.values > 0.5
+
+#prediction
+fitted.results <- predict(model_logit,newdata=test_logit)
+
+?findLinearCombos
+
+fitted.results
+#nilai prediksi dari implementasi model terhadap variabel-variabel pada data test_logit.
+#Bukan data popularity sebenarnya (label, pada supervised learning)
+fitted.results <- ifelse(fitted.results > 0.5,1,0)
+
+table(fitted.results, test_logit$popularity)
+
+#accuracy
+misClasificError <- mean(fitted.results != test_logit$popularity)
+accr <- 1 - misClasificError
+accr
+#Accuracy = 0.6566832
+
+#AUC
+pr <- prediction(fitted.results, test_logit$popularity)
+pr
+prf <- performance(pr, measure = "tpr", x.measure = "fpr")
+plot(prf)
+
+auc <- performance(pr, measure = "auc")
+auc <- auc@y.values[[1]]
+auc
+#AUC = 0.6518797
